@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generator Jawaban Absurd</title>
+    <style>
+        body { font-family: Comic Sans MS, cursive; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 50px auto; padding: 20px; text-align: center; }
+        input, button { padding: 10px; margin: 10px; font-size: 16px; }
+        input { width: 250px; }
+        #result { margin: 20px; padding: 15px; border: 2px dashed #ff69b4; }
+        .twitter-share { background: #1da1f2; color: white; border: none; cursor: pointer; }
+        
+        /* Tab styles */
+        .tab-container { margin: 20px 0; }
+        .tab-button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.3s;
+        }
+        .tab-button.active {
+            background: #ff69b4;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .tab-content.active { display: block; }
+        
+        /* Loading animation */
+        .loading {
+            display: none;
+            margin: 20px auto;
+            text-align: center;
+            font-size: 20px;
+        }
+        .thinking {
+            display: inline-block;
+            animation: bounce 0.5s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Generator Jawaban Absurd</h1>
+        
+        <div class="tab-container">
+            <button class="tab-button active" onclick="openTab('tanya')">💭 Tanya Apa Saja</button>
+            <button class="tab-button" onclick="openTab('khodam')">👻 Cek Khodam</button>
+            <button class="tab-button" onclick="openTab('jodoh')">❤️ Cek Jodoh</button>
+        </div>
+
+        <!-- Tab Tanya Apa Saja -->
+        <div id="tanya" class="tab-content active">
+            <input type="text" id="questionInput" placeholder="Mengapa [ketik pertanyaanmu di sini]...?" />
+            <button onclick="generateAnswer('question')">Tanya!</button>
+        </div>
+
+        <!-- Tab Cek Khodam -->
+        <div id="khodam" class="tab-content">
+            <input type="text" id="khodamName" placeholder="Nama Lengkap" />
+            <input type="date" id="khodamBirth" />
+            <button onclick="generateAnswer('khodam')">Cek Khodam</button>
+        </div>
+
+        <!-- Tab Cek Jodoh -->
+        <div id="jodoh" class="tab-content">
+            <input type="text" id="name1" placeholder="Nama Kamu" />
+            <input type="date" id="birth1" />
+            <br>
+            <input type="text" id="name2" placeholder="Nama Pasangan" />
+            <input type="date" id="birth2" />
+            <button onclick="generateAnswer('jodoh')">Cek Kecocokan</button>
+        </div>
+
+        <!-- Loading animation -->
+        <div id="loading" class="loading">
+            <span class="thinking">🤔</span>
+            <span class="thinking" style="animation-delay: 0.1s">.</span>
+            <span class="thinking" style="animation-delay: 0.2s">.</span>
+            <span class="thinking" style="animation-delay: 0.3s">.</span>
+            <div>AI sedang berpikir keras...</div>
+        </div>
+
+        <div id="result"></div>
+        <button class="twitter-share" onclick="shareToTwitter()" style="display: none;">
+            Share to Twitter 🐦
+        </button>
+    </div>
+
+    <script>
+        function openTab(tabName) {
+            const tabs = document.getElementsByClassName('tab-content');
+            const buttons = document.getElementsByClassName('tab-button');
+            
+            for(let tab of tabs) {
+                tab.classList.remove('active');
+            }
+            for(let button of buttons) {
+                button.classList.remove('active');
+            }
+            
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        async function generateAnswer(type) {
+            let payload = {};
+            
+            if (type === 'question') {
+                const question = document.getElementById('questionInput').value;
+                if (!question) {
+                    alert('Tolong ketik pertanyaanmu dulu ya!');
+                    return;
+                }
+                payload = { type, question };
+            } 
+            else if (type === 'khodam') {
+                const name = document.getElementById('khodamName').value;
+                const birth = document.getElementById('khodamBirth').value;
+                if (!name || !birth) {
+                    alert('Tolong isi nama dan tanggal lahir dulu ya!');
+                    return;
+                }
+                payload = { type, name, birth };
+            }
+            else if (type === 'jodoh') {
+                const name1 = document.getElementById('name1').value;
+                const birth1 = document.getElementById('birth1').value;
+                const name2 = document.getElementById('name2').value;
+                const birth2 = document.getElementById('birth2').value;
+                if (!name1 || !birth1 || !name2 || !birth2) {
+                    alert('Tolong isi semua data dulu ya!');
+                    return;
+                }
+                payload = { type, name1, birth1, name2, birth2 };
+            }
+
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            document.querySelector('.twitter-share').style.display = 'none';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                result.innerHTML = data.response;
+                result.style.display = 'block';
+                document.querySelector('.twitter-share').style.display = 'inline';
+                document.querySelector('.twitter-share').dataset.excuse = data.response;
+            } catch (error) {
+                result.innerHTML = '😅 Ups! AI-nya sedang pusing. Coba lagi ya!';
+                result.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function shareToTwitter() {
+            const text = document.querySelector('.twitter-share').dataset.excuse;
+            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text + " #JawabanAbsurd")}`;
+            window.open(tweetUrl, '_blank');
+        }
+    </script>
+</body>
+</html>
+</html>
